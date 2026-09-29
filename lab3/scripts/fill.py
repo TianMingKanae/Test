@@ -6,8 +6,8 @@ from docx.oxml import OxmlElement
 from docx.text.paragraph import Paragraph
 SRC='/root/.claude/uploads/de2f076b-18ee-50d2-8724-46a3b7c13fa0/bda20359-Lab_3_report.docx'
 d=docx.Document(SRC)
-BLUE=RGBColor(0x1F,0x4E,0x79)
-def font(run, code=False, bold=False, color=BLUE, size=None):
+BLUE=None
+def font(run, code=False, bold=False, color=None, size=None):
     rpr=run._r.get_or_add_rPr(); f=rpr.find(qn('w:rFonts'))
     if f is None: f=OxmlElement('w:rFonts'); rpr.insert(0,f)
     a='Courier New' if code else 'Times New Roman'
@@ -32,7 +32,7 @@ class Writer:
     def img(s,path,w=5.75,caption=None):
         p=new_par_after(s.cur); s.cur=p; p.alignment=WD_ALIGN_PARAGRAPH.CENTER
         p.add_run().add_picture(path,width=Inches(w))
-        if caption: s.par([(caption,{'size':10,'color':RGBColor(0x59,0x59,0x59)})],align=WD_ALIGN_PARAGRAPH.CENTER,space_after=8)
+        if caption: s.par([(caption,{'size':10})],align=WD_ALIGN_PARAGRAPH.CENTER,space_after=8)
 C={'code':True}; B={'bold':True}
 body=d.element.body
 def paras(): return d.paragraphs
@@ -52,101 +52,81 @@ _ts=list(d.paragraphs[0]._p.iter(qn('w:t')))
 for a_,b_ in zip(_ts,_ts[1:]):
     if a_.text=='學號' and b_.text==':_____': b_.text=': 112652006'
     if a_.text=='姓名' and b_.text==':_____': b_.text=': 陳昱翰'
+P=lambda w,t,**k: w.par(t,**k)
+
 # ---------- Q1
 a=find('當訂閱的topic為 /a/test'); clear_blanks_after(a); w=Writer(a)
-w.par([('Ans：不能。',B)])
-w.par(['MQTT 的 topic 以「/」作為階層分隔符號，開頭的「/」本身也會切出一個「空字串」的層級。因此 ',('/a/test',C),' 共有 3 層（""、"a"、"test"），而 ',('a/test',C),' 只有 2 層（"a"、"test"）。訂閱的 topic 沒有使用萬用字元（+、#）時，必須每一層都完全相同才算匹配；兩者層數不同、第一層也不同（"" ≠ "a"），所以訂閱 ',('/a/test',C),' 的 subscriber 收不到發佈到 ',('a/test',C),' 的訊息。'])
-w.par(['實驗驗證：Terminal 1 訂閱 ',('/a/test',C),'，Terminal 2 先 publish 到 ',('a/test',C),'（test_q1），subscriber 沒有任何輸出；再 publish 到 ',('/a/test',C),'（test_q1_compare）作對照，subscriber 才收到訊息。'])
-w.img('img_q1.png',caption='圖 1　Q1 測試：只有 /a/test 的訊息被收到，a/test 的 test_q1 沒有出現')
+P(w,'Ans: 不能。')
+P(w,'因為topic是用 "/" 來分層的，/a/test 開頭多了一個 "/"，所以第一層其實是空的，總共有三層（空、a、test），而 a/test 只有兩層（a、test）。沒有用萬用字元的話，每一層都要一樣才會收到，所以訂閱 /a/test 收不到 a/test 的訊息。')
+P(w,'實際測試時，pub 到 a/test 的 test_q1 沒有收到，改 pub 到 /a/test 才有收到。')
+w.img('img_q1.png',caption='圖1  Q1測試結果')
 blank(w)
 
 # ---------- Q2
 a=find('所有roof的所有內容'); clear_blanks_after(a); w=Writer(a)
-w.par([('Ans：',B)])
-for i,(q,t,alt,n) in enumerate([
-    ('所有 roof 在 day 的 brightness','+/roof/brightness/day',None,2),
-    ('house1 firstfloor 的所有內容','house1/firstfloor/#','house1/firstfloor/+/+',6),
-    ('house2 在 night 的所有內容','house2/+/+/night',None,9),
-    ('所有 roof 的所有內容','+/roof/#','+/roof/+/+',12)],1):
-    parts=[f'({i}) {q}：',(t,{'code':True,'bold':True})]
-    if alt: parts+=['（亦可寫成 ',(alt,C),'）']
-    parts+=[f'　→ 實測收到 {n} 則']
-    w.par(parts,indent=0.2)
-w.par(['說明：「+」只能代表「單一」階層，可放在任何位置；「#」代表其後的任意多個階層，只能放在最後一層。第 (1)(3) 題要固定某幾層、其他單層任意，所以用「+」；第 (2)(4) 題要某層以下的所有內容，所以在結尾用「#」。將 2×3×3×2 = 36 種 topic 全部 publish 一次，四個 subscriber 分別只收到 2、6、9、12 則，與預期相符。'])
-w.par(['補充：若題目格式中最後的「/」代表實際 topic 結尾真的有一個「/」（例如 ',('house1/roof/brightness/day/',C),'），則 (1)(3) 需寫成 ',('+/roof/brightness/day/',C),'、',('house2/+/+/night/',C),'（多一個空的最後層），(2)(4) 用「#」的寫法不受影響。'])
-w.img('img_q2.png',caption='圖 2　Q2 測試：四個 subscriber 同時訂閱，publisher 送出全部 36 種 topic')
+P(w,'Ans:')
+for i,t in enumerate(['+/roof/brightness/day','house1/firstfloor/#','house2/+/+/night','+/roof/#'],1):
+    P(w,f'{i}. {t}',indent=0.2,space_after=0)
+blank(w)
+P(w,'+ 只能代表一層，# 可以代表後面所有層，但只能放在最後面。第1、3題是中間某幾層不限定，所以用 +；第2、4題是要某一層以下的全部內容，所以用 #。')
+P(w,'我把36種topic全部pub一次，四個subscriber分別收到2、6、9、12筆，跟算出來的一樣。')
+w.img('img_q2.png',caption='圖2  Q2測試結果')
 blank(w)
 
 # ---------- Q3
 a=find('排除匿名使用者截圖'); clear_blanks_after(a); w=Writer(a)
-w.par([('步驟：',B)])
-for s in [['用 ',('sudo mosquitto_passwd -c /etc/mosquitto/passwd <帳號>',C),' 建立帳號（本次帳號設為學號 112652006，密碼 123456；-c 會新建 passwd 檔），建立後 /etc/mosquitto 下多了 passwd，內容為「帳號:雜湊後的密碼」。'],
-          ['在 ',('/etc/mosquitto/mosquitto.conf',C),' 加入 ',('password_file /etc/mosquitto/passwd',C),' 與 ',('allow_anonymous false',C),'，並 ',('sudo service mosquitto restart',C),'。'],
-          ['注意：mosquitto 2.x 若設定檔中沒有任何 listener，會進入 local only mode，此時 allow_anonymous false 不會生效，因此要另外加上 ',('listener 1883',C),'。'],
-          ['結果：未帶帳密（匿名）或密碼錯誤的 sub / pub 都被拒絕（Connection Refused: not authorised）；帶正確的 ',('-u',C),' / ',('-P',C),' 後即可正常訂閱與發佈。']]:
-    w.par(s,indent=0.2)
-w.img('img_q3a.png',caption='圖 3　建立帳號、檢視 passwd、修改 mosquitto.conf 並重啟 broker')
-w.img('img_q3b.png',caption='圖 4　匿名 / 錯誤密碼被拒；使用帳號密碼後 subscriber 成功收到訊息')
+P(w,'先用 mosquitto_passwd 建立帳號（帳號112652006，密碼123456），再到 mosquitto.conf 加上 password_file /etc/mosquitto/passwd 和 allow_anonymous false，然後 restart mosquitto。（我用的 mosquitto 是2.0版，要多加一行 listener 1883 才會擋匿名。）')
+P(w,'之後不加帳密直接 sub 或 pub 都會出現 not authorised，密碼打錯也一樣，加上 -u 112652006 -P 123456 才能正常收發。')
+w.img('img_q3a.png',caption='圖3  建立帳號、修改設定檔並重啟')
+w.img('img_q3b.png',caption='圖4  匿名被拒絕，用帳密可以正常收發')
 blank(w)
 
 # ---------- Q4 table
 tbl=d.tables[0]
-res=[('in　msg1','（收不到）'),('out　msg2','fromA/out　msg2'),('out/msg　msg3','fromA/msg　msg3'),
-     ('/out　msg4','（收不到）'),('fromB/out　msg5','out　msg5'),('fromB/fromB　msg6','fromB　msg6')]
+res=[('in  msg1','無'),('out  msg2','fromA/out  msg2'),('out/msg  msg3','fromA/msg  msg3'),
+     ('/out  msg4','無'),('fromB/out  msg5','out  msg5'),('fromB/fromB  msg6','fromB  msg6')]
 for row,(ra,rb) in zip(tbl.rows[1:],res):
     for cell,val in zip(row.cells[1:],(ra,rb)):
-        p=cell.paragraphs[0]; r=p.add_run(val); font(r,code=not val.startswith('（'),size=11)
-w=Writer(Paragraph(tbl._tbl,d._body))
-# insert after table: need paragraph-like anchor
+        r=cell.paragraphs[0].add_run(val); font(r,size=11)
 anchor=OxmlElement('w:p'); tbl._tbl.addnext(anchor); w=Writer(Paragraph(anchor,d._body))
-w.par([('Bridge 設定（設在 Broker A / VM）：',B)])
-for l in ['connection bridge-01','address <Pi板 IP>:1883','topic # out 1 out/ fromA/','topic # in 1 fromB/']:
-    w.par([(l,C)],indent=0.3,space_after=0)
+P(w,'Bridge設在A（VM），設定如下：')
+for l in ['connection bridge-01','address <Pi板IP>:1883','topic # out 1 out/ fromA/','topic # in 1 fromB/']:
+    P(w,l,indent=0.3,space_after=0)
 blank(w)
-w.par([('結果說明：',B)])
-for s in [['out 規則：local-prefix 為 out/、remote-prefix 為 fromA/，A 會在本地訂閱 ',('out/#',C),'，符合的訊息轉送給 B，並把開頭的 out/ 換成 fromA/。所以 msg3（',('out/msg',C),'）在 B 顯示為 ',('fromA/msg',C),'。'],
-          ['msg2 的 topic 是 ',('out',C),'：MQTT 的「#」也會匹配它的上一層本身，所以 ',('out',C),' 符合 ',('out/#',C),' 而被轉送；但它並不是以 "out/" 開頭，沒有前綴可以拿掉，於是只在前面加上 fromA/，B 看到 ',('fromA/out',C),'。'],
-          ['msg1（',('in',C),'）與 msg4（',('/out',C),'，第一層是空字串而不是 out）都不符合 out/#，只留在 A，B 收不到。'],
-          ['in 規則：只有 local-prefix fromB/，沒有 remote-prefix，所以 A 在 B 上訂閱「#」，B 上所有訊息都會被帶回 A，並在 topic 前面加上 fromB/：msg5 → ',('fromB/out',C),'、msg6 → ',('fromB/fromB',C),'。B 自己的 subscriber 則照原 topic 顯示。'],
-          ['B 上的 fromA/… 訊息不會再被 in 規則帶回 A 形成迴圈，因為 mosquitto 的 bridge 連線會告知遠端 broker 不要把 bridge 自己送出的訊息再回送（no-local / try_private）。'],
-          ['A 的 subscriber 訂閱「#」，本地 publish 的訊息都會原樣顯示（out 規則只影響送往 B 的訊息，不影響 A 本地）。']]:
-    w.par(s,indent=0.2)
-w.img('img_q4a.png',caption='圖 5　在 Broker A 的 mosquitto.conf 加入 bridge 設定並重啟')
-w.img('img_q4b.png',caption='圖 6　兩邊 client 皆訂閱 #，依表格順序 publish 的結果')
-w.par([('註：此次截圖中的 Broker B 以同一台機器上 port 1884 的 mosquitto 代替 Pi 板（位址 127.0.0.1:1884），bridge 行為與連到 Pi 板相同。',{'size':10,'color':RGBColor(0x59,0x59,0x59)})])
-# remove leftover blanks after (anchor chain) up to Q5
+P(w,'結果討論：')
+for t in ['1. A的subscriber訂閱 #，所以A自己pub的訊息都會照原本的topic顯示。',
+          '2. out那行的意思是A上 out/ 開頭的訊息會送到B，而且 out/ 會換成 fromA/，所以msg3在B變成 fromA/msg。',
+          '3. msg2的topic只有 out，本來以為不會送過去，結果B收到 fromA/out。查了一下是因為 # 也會匹配上一層本身，所以 out 也符合 out/#，只是它沒有 out/ 可以換，就直接在前面加上 fromA/。',
+          '4. msg1（in）和msg4（/out）都不符合 out/#，所以只有A收得到，B收不到。',
+          '5. in那行只有設local-prefix，所以B上的所有訊息都會傳回A，而且前面加上 fromB/，msg5、msg6在A分別變成 fromB/out 和 fromB/fromB，B自己則是照原本的topic顯示。']:
+    P(w,t,indent=0.2)
+w.img('img_q4a.png',caption='圖5  在A加上bridge設定')
+w.img('img_q4b.png',caption='圖6  Q4測試結果')
+P(w,'註：這次的Broker B是用同一台電腦上port 1884的mosquitto代替Pi板。',**{'space_after':4})
 clear_blanks_after(w.cur); blank(w)
 body.remove(anchor)
 
 # ---------- Q5
 a=find('在MQTT bridge configuration中，QoS level'); clear_blanks_after(a); w=Writer(a)
-w.par([('Ans：',B),'QoS 有 0、1、2 三種等級，數字越高傳遞保證越強，但交握次數與負擔也越大。bridge 設定 ',('topic <pattern> <direction> <qos>',C),' 中的 qos，是兩個 broker 之間轉送該 topic 時使用的 QoS。'])
-for s in [[('QoS 0 – At most once（最多一次）：',B),'送出 PUBLISH 後就不管了，接收端不回覆確認，也不重送。速度最快、負擔最小，但網路不穩時訊息可能遺失。適合頻繁更新、掉一筆也無所謂的感測資料。'],
-          [('QoS 1 – At least once（至少一次）：',B),'接收端收到後回 PUBACK；傳送端在收到 PUBACK 前會保存訊息，逾時就重送（DUP 旗標）。保證送達，但可能因重送而收到重複訊息，接收端需能容忍重複。'],
-          [('QoS 2 – Exactly once（剛好一次）：',B),'以 PUBLISH → PUBREC → PUBREL → PUBCOMP 四次交握，雙方用 Packet ID 記錄狀態，保證訊息只被處理一次、不遺失也不重複。最可靠但延遲與負擔最大，適合計費、控制指令等不能重複的訊息。']]:
-    w.par(s,indent=0.2)
-w.par(['實際送達的 QoS 會取「發佈端的 QoS」與「訂閱（或 bridge 設定）的 QoS」兩者中較低者。本實驗 bridge 設 QoS 1，代表兩個 broker 之間的轉送保證至少送達一次。'])
+P(w,'Ans: QoS有0、1、2三種。')
+for t in ['QoS 0：最多送一次。送出去就不管了，對方也不用回應，所以有可能掉訊息，但速度最快。',
+          'QoS 1：至少送一次。對方收到要回PUBACK，沒收到回應就會重送，所以訊息不會掉，但可能會收到重複的。',
+          'QoS 2：剛好送一次。要經過PUBLISH、PUBREC、PUBREL、PUBCOMP四次交握，確保不會掉也不會重複，但最慢、負擔也最大。']:
+    P(w,t,indent=0.2)
+P(w,'在bridge設定裡，topic後面的那個數字就是兩個broker之間傳這些topic時用的QoS，這次實驗設的是1。')
 blank(w)
 
 # ---------- Q6
 a=find('什麼是"保留消息'); clear_blanks_after(a); w=Writer(a)
-w.par([('Ans：',B)])
-w.par([('(1) true / false 的作用',B)])
-w.par([('cleansession true：',B),'bridge 以「乾淨的 session」連線到遠端 broker。連線中斷時，遠端 broker 會清除這個 bridge 的所有訂閱以及尚未送出的訊息；重新連線時一切重新開始，bridge 重新訂閱，斷線期間的訊息會遺失。'],indent=0.2)
-w.par([('cleansession false（預設）：',B),'使用「持久 session」。遠端 broker 以 client id 記住 bridge 的訂閱，斷線時仍保留，並替它暫存斷線期間 QoS 1/2 的訊息；重連後繼續沿用原訂閱並補送這些訊息，不容易掉資料。'],indent=0.2)
-w.par([('(2) cleansession 為 false 時更改訂閱主題的意外行為',B)])
-w.par(['現象：修改 bridge 的 topic 設定（例如把 ',('topic sensor/# in',C),' 改成 ',('topic light/# in',C),'）並重連後，除了新的主題，仍會繼續收到「舊主題」的訊息，而且在設定檔裡已經找不到這條規則。'],indent=0.2)
-w.par(['原因：session 是保存在「遠端 broker」上的。false 時重連會沿用舊 session，遠端 broker 仍記得舊的訂閱；bridge 重連時只會送出新設定中的 SUBSCRIBE，並不知道要去 UNSUBSCRIBE 已經從設定檔刪掉的舊主題，所以新舊訂閱同時存在。'],indent=0.2)
-w.par(['解決：先把 cleansession 設為 true 並重啟讓 bridge 重新連線，遠端就會清掉舊 session（含舊訂閱）；確認之後再改回 false、重啟一次，恢復正常的持久 session。'],indent=0.2)
-w.par([('(3) 保留訊息（retained messages）與大量重送',B)])
-w.par(['保留訊息：publish 時設定 retain 旗標（如 ',('mosquitto_pub -r',C),'），broker 會為該 topic 保存「最後一筆」保留訊息；之後任何 client 一訂閱到符合的 topic，broker 就立刻把這筆訊息送給它，讓新訂閱者不用等下一次更新就能拿到最新狀態（例如裝置目前的溫度、開關狀態）。'],indent=0.2)
-w.par(['為何 true 時會大量發送：cleansession 為 true 時，每次斷線後遠端都會把訂閱清掉，所以 bridge 每次重連都必須「重新訂閱」。而每一次新的訂閱都會觸發 broker 把所有符合主題的保留訊息整批送出；bridge 常用「#」這類範圍很大的萬用字元，涵蓋的保留訊息可能非常多，網路不穩頻繁重連時，就會一次又一次收到大量重複的保留訊息。false 時訂閱一直保留、不需重新訂閱，就不會發生這種情況。'],indent=0.2)
+P(w,'Ans:')
+P(w,'1. 設成true的話，bridge斷線時遠端broker會把它的訂閱和還沒送出的訊息都清掉，重新連線後要重新訂閱，斷線期間的訊息就收不到了。設成false（預設）的話，遠端broker會保留bridge的訂閱，斷線期間QoS 1、2的訊息也會先存起來，重連之後再補送。')
+P(w,'2. 如果是false，改了bridge的topic之後重連，還是會收到舊topic的訊息。因為訂閱是存在遠端broker上的，重連時會沿用舊的session，而bridge只會去訂閱新的topic，不會取消舊的，所以舊的訂閱還在。解決方法就是先把cleansession改成true重連一次，把舊的清掉，再改回false。')
+P(w,'3. retained message是publish時有加retain旗標（例如 mosquitto_pub -r）的訊息，broker會把每個topic最後一筆retained message存起來，之後只要有人訂閱這個topic就會馬上收到這一筆。設成true的話每次重連都要重新訂閱，而每訂閱一次，broker就會把符合的retained message全部再送一次。bridge通常是訂閱 # 這種範圍很大的topic，所以只要重連次數一多，就會一直收到一大堆retained message。')
 blank(w)
 
 # ---------- Q7
 a=find('Q7.心得'); w=Writer(a)
-w.par(['這次實驗實際操作了 MQTT 的 publish / subscribe、帳號驗證與 bridge。Q1 讓我注意到 topic 開頭多一個「/」就等於多了一層空字串，看起來很像的 /a/test 和 a/test 其實完全不同；Q2 則熟悉了「+」只代表單一層、「#」代表之後所有層的差別，用實際發送 36 種 topic 驗證每個 subscriber 收到的筆數，比只在紙上推比較有把握。'])
-w.par(['設定帳號密碼時遇到一個坑：新版 mosquitto（2.x）如果設定檔沒有寫 listener，會進入 local only mode，allow_anonymous false 不會生效，匿名使用者照樣可以連線，加上 listener 1883 之後才正確擋下。另外 passwd 檔不存在或 broker 沒有權限讀取時，mosquitto 會直接啟動失敗，client 只看到 Connection refused，要去看 log 才知道原因。'])
-w.par(['Bridge 的部分最有收穫。out/in 方向搭配 local-prefix、remote-prefix 可以讓兩個 broker 之間只分享部分主題並重新命名，例如 out/msg 到 B 變成 fromA/msg、B 的所有訊息到 A 都加上 fromB/。其中 topic 為 out 的訊息也會被轉送成 fromA/out，是因為「#」也會匹配上一層本身，這是實際測試後才發現的細節。整體而言，MQTT 架構簡單、傳輸量小，透過 broker 讓發佈者與訂閱者互不需要知道對方位址，很適合 IoT 裝置之間的溝通。'])
+P(w,'這次實驗學到MQTT的基本用法。一開始在設定VM的時候，因為VM沒有關機，網路跟處理器的設定都不能改，關機後才改得了。做pub/sub的時候，我一開始把sub和pub開在同一個terminal，sub跑起來之後按Ctrl+C跳出來再pub，當然收不到，後來才知道要開兩個terminal，一個負責訂閱、一個負責發布。')
+P(w,'Q1原本覺得 /a/test 跟 a/test 應該差不多，實際測了才知道開頭多一個 / 就會多一層。Q2用 + 和 # 去篩選topic還蠻直觀的。bridge的部分比較複雜，out、in再加上prefix的轉換要想一下，像msg2的topic是 out 也會被送出去這點一開始沒想到，測完才搞懂。整體來說MQTT設定起來不難，pub跟sub只要知道broker的IP就可以溝通，蠻適合用在IoT上的。')
 
 d.save('Lab_3_report_filled.docx'); print('saved')
