@@ -58,8 +58,8 @@ P=lambda w,t,**k: w.par(t,**k)
 a=find('當訂閱的topic為 /a/test'); clear_blanks_after(a); w=Writer(a)
 P(w,'Ans: 不能。')
 P(w,'因為topic是用 "/" 來分層的，/a/test 開頭多了一個 "/"，所以第一層其實是空的，總共有三層（空、a、test），而 a/test 只有兩層（a、test）。沒有用萬用字元的話，每一層都要一樣才會收到，所以訂閱 /a/test 收不到 a/test 的訊息。')
-P(w,'實際測試時，pub 到 a/test 的 test_q1 沒有收到，改 pub 到 /a/test 才有收到。')
-w.img('img_q1.png',caption='圖1  Q1測試結果')
+P(w,'實際測試時，pub 到 a/test 的 test_q1，訂閱 /a/test 的那邊沒有收到。')
+w.img('img_q1_vm.png',w=4.5,caption='圖1  Q1測試結果')
 blank(w)
 
 # ---------- Q2
@@ -70,7 +70,7 @@ for i,t in enumerate(['+/roof/brightness/day','house1/firstfloor/#','house2/+/+/
 blank(w)
 P(w,'+ 只能代表一層，# 可以代表後面所有層，但只能放在最後面。第1、3題是中間某幾層不限定，所以用 +；第2、4題是要某一層以下的全部內容，所以用 #。')
 P(w,'我把36種topic全部pub一次，四個subscriber分別收到2、6、9、12筆，跟算出來的一樣。')
-w.img('img_q2.png',caption='圖2  Q2測試結果')
+w.img('img_q2_vm.png',w=4.3,caption='圖2  Q2測試結果')
 blank(w)
 
 # ---------- Q3
