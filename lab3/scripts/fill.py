@@ -96,13 +96,10 @@ blank(w)
 P(w,'結果討論：')
 for t in ['1. A的subscriber訂閱 #，所以A自己pub的訊息都會照原本的topic顯示。',
           '2. out那行的意思是A上 out/ 開頭的訊息會送到B，而且 out/ 會換成 fromA/，所以msg3在B變成 fromA/msg。',
-          '3. msg2的topic只有 out，本來以為不會送過去，結果B收到 fromA/out。查了一下是因為 # 也會匹配上一層本身，所以 out 也符合 out/#，只是它沒有 out/ 可以換，就直接在前面加上 fromA/。',
+          '3. msg2的topic只有 out，因為 # 也會匹配上一層本身，所以 out 也符合 out/#，會被送到B，只是它沒有 out/ 可以換，就直接在前面加上 fromA/，B收到的是 fromA/out。',
           '4. msg1（in）和msg4（/out）都不符合 out/#，所以只有A收得到，B收不到。',
           '5. in那行只有設local-prefix，所以B上的所有訊息都會傳回A，而且前面加上 fromB/，msg5、msg6在A分別變成 fromB/out 和 fromB/fromB，B自己則是照原本的topic顯示。']:
     P(w,t,indent=0.2)
-w.img('img_q4a.png',caption='圖5  在A加上bridge設定')
-w.img('img_q4b.png',caption='圖6  Q4測試結果')
-P(w,'註：這次的Broker B是用同一台電腦上port 1884的mosquitto代替Pi板。',**{'space_after':4})
 clear_blanks_after(w.cur); blank(w)
 body.remove(anchor)
 
@@ -127,6 +124,6 @@ blank(w)
 # ---------- Q7
 a=find('Q7.心得'); w=Writer(a)
 P(w,'這次實驗學到MQTT的基本用法。一開始在設定VM的時候，因為VM沒有關機，網路跟處理器的設定都不能改，關機後才改得了。做pub/sub的時候，我一開始把sub和pub開在同一個terminal，sub跑起來之後按Ctrl+C跳出來再pub，當然收不到，後來才知道要開兩個terminal，一個負責訂閱、一個負責發布。')
-P(w,'Q1原本覺得 /a/test 跟 a/test 應該差不多，實際測了才知道開頭多一個 / 就會多一層。Q2用 + 和 # 去篩選topic還蠻直觀的。bridge的部分比較複雜，out、in再加上prefix的轉換要想一下，像msg2的topic是 out 也會被送出去這點一開始沒想到，測完才搞懂。整體來說MQTT設定起來不難，pub跟sub只要知道broker的IP就可以溝通，蠻適合用在IoT上的。')
+P(w,'Q1原本覺得 /a/test 跟 a/test 應該差不多，實際測了才知道開頭多一個 / 就會多一層。Q2用 + 和 # 去篩選topic還蠻直觀的。bridge的部分比較複雜，out、in再加上prefix的轉換要想一下，像msg2的topic是 out 也會被送出去這點一開始沒想到，後來才搞懂。整體來說MQTT設定起來不難，pub跟sub只要知道broker的IP就可以溝通，蠻適合用在IoT上的。')
 
 d.save('Lab_3_report_filled.docx'); print('saved')
