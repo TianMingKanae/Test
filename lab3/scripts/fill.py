@@ -47,6 +47,11 @@ def clear_blanks_after(p):
         n2=nxt.getnext(); body.remove(nxt); nxt=n2
 def blank(w): w.par('',space_after=0)
 
+# ---------- header
+_ts=list(d.paragraphs[0]._p.iter(qn('w:t')))
+for a_,b_ in zip(_ts,_ts[1:]):
+    if a_.text=='學號' and b_.text==':_____': b_.text=': 112652006'
+    if a_.text=='姓名' and b_.text==':_____': b_.text=': 陳昱翰'
 # ---------- Q1
 a=find('當訂閱的topic為 /a/test'); clear_blanks_after(a); w=Writer(a)
 w.par([('Ans：不能。',B)])
@@ -75,7 +80,7 @@ blank(w)
 # ---------- Q3
 a=find('排除匿名使用者截圖'); clear_blanks_after(a); w=Writer(a)
 w.par([('步驟：',B)])
-for s in [['用 ',('sudo mosquitto_passwd -c /etc/mosquitto/passwd <帳號>',C),' 建立帳號（-c 會新建 passwd 檔），建立後 /etc/mosquitto 下多了 passwd，內容為「帳號:雜湊後的密碼」。'],
+for s in [['用 ',('sudo mosquitto_passwd -c /etc/mosquitto/passwd <帳號>',C),' 建立帳號（本次帳號設為學號 112652006，密碼 123456；-c 會新建 passwd 檔），建立後 /etc/mosquitto 下多了 passwd，內容為「帳號:雜湊後的密碼」。'],
           ['在 ',('/etc/mosquitto/mosquitto.conf',C),' 加入 ',('password_file /etc/mosquitto/passwd',C),' 與 ',('allow_anonymous false',C),'，並 ',('sudo service mosquitto restart',C),'。'],
           ['注意：mosquitto 2.x 若設定檔中沒有任何 listener，會進入 local only mode，此時 allow_anonymous false 不會生效，因此要另外加上 ',('listener 1883',C),'。'],
           ['結果：未帶帳密（匿名）或密碼錯誤的 sub / pub 都被拒絕（Connection Refused: not authorised）；帶正確的 ',('-u',C),' / ',('-P',C),' 後即可正常訂閱與發佈。']]:
