@@ -75,7 +75,7 @@ blank(w)
 
 # ---------- Q3
 a=find('排除匿名使用者截圖'); clear_blanks_after(a); w=Writer(a)
-P(w,'先用 mosquitto_passwd 建立帳號（帳號112652006，密碼123456），再到 mosquitto.conf 加上 password_file /etc/mosquitto/passwd 和 allow_anonymous false，然後 restart mosquitto。（我用的 mosquitto 是2.0版，要多加一行 listener 1883 才會擋匿名。）')
+P(w,'先用 mosquitto_passwd 建立帳號（帳號112652006，密碼123456），再到 mosquitto.conf 加上 password_file /etc/mosquitto/passwd 和 allow_anonymous false，然後 restart mosquitto。')
 P(w,'之後不加帳密直接 sub 或 pub 都會出現 not authorised，密碼打錯也一樣，加上 -u 112652006 -P 123456 才能正常收發。')
 w.img('img_q3a.png',caption='圖3  建立帳號、修改設定檔並重啟')
 w.img('img_q3b.png',caption='圖4  匿名被拒絕，用帳密可以正常收發')
