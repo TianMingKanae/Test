@@ -89,16 +89,12 @@ for row,(ra,rb) in zip(tbl.rows[1:],res):
     for cell,val in zip(row.cells[1:],(ra,rb)):
         r=cell.paragraphs[0].add_run(val); font(r,size=11)
 anchor=OxmlElement('w:p'); tbl._tbl.addnext(anchor); w=Writer(Paragraph(anchor,d._body))
-P(w,'Bridge設在A（VM），設定如下：')
-for l in ['connection bridge-01','address <Pi板IP>:1883','topic # out 1 out/ fromA/','topic # in 1 fromB/']:
-    P(w,l,indent=0.3,space_after=0)
-blank(w)
 P(w,'結果討論：')
 for t in ['1. A的subscriber訂閱 #，所以A自己pub的訊息都會照原本的topic顯示。',
-          '2. out那行的意思是A上 out/ 開頭的訊息會送到B，而且 out/ 會換成 fromA/，所以msg3在B變成 fromA/msg。',
+          '2. topic # out 1 out/ fromA/ 的意思是A上 out/ 開頭的訊息會送到B，而且 out/ 會換成 fromA/，所以msg3在B變成 fromA/msg。',
           '3. msg2的topic只有 out，因為 # 也會匹配上一層本身，所以 out 也符合 out/#，會被送到B，只是它沒有 out/ 可以換，就直接在前面加上 fromA/，B收到的是 fromA/out。',
           '4. msg1（in）和msg4（/out）都不符合 out/#，所以只有A收得到，B收不到。',
-          '5. in那行只有設local-prefix，所以B上的所有訊息都會傳回A，而且前面加上 fromB/，msg5、msg6在A分別變成 fromB/out 和 fromB/fromB，B自己則是照原本的topic顯示。']:
+          '5. topic # in 1 fromB/ 只有設local-prefix，所以B上的所有訊息都會傳回A，而且前面加上 fromB/，msg5、msg6在A分別變成 fromB/out 和 fromB/fromB，B自己則是照原本的topic顯示。']:
     P(w,t,indent=0.2)
 clear_blanks_after(w.cur); blank(w)
 body.remove(anchor)
