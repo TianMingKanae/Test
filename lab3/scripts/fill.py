@@ -97,6 +97,7 @@ for t in ['1. A的subscriber訂閱 #，所以A自己pub的訊息都會照原本�
           '4. msg1（in）和msg4（/out）都不符合 out/#，所以只有A收得到，B收不到。',
           '5. topic # in 1 fromB/ 只有設local-prefix，所以B上的所有訊息都會傳回A，而且前面加上 fromB/，msg5、msg6在A分別變成 fromB/out 和 fromB/fromB，B自己則是照原本的topic顯示。']:
     P(w,t,indent=0.2)
+w.img('img_q4_vm.png',w=5.7,caption='圖6  Q4測試結果')
 clear_blanks_after(w.cur); blank(w)
 body.remove(anchor)
 
